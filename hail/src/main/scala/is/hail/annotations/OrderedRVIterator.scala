@@ -1,6 +1,6 @@
 package is.hail.annotations
 
-import is.hail.rvd.{RVDType, RVDContext}
+import is.hail.rvd.{RVDContext, RVDType}
 import is.hail.utils._
 
 import scala.collection.generic.Growable

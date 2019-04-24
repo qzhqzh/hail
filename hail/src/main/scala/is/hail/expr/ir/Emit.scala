@@ -333,7 +333,7 @@ private class Emit(
         val mx = mb.newField[Boolean]()
         val x = coerce[Any](mb.newField(name)(vti))
         val codeV = emit(value)
-        val bodyenv = env.bind(name -> (vti, mx.load(), x.load()))
+        val bodyenv = env.bind(name, (vti, mx.load(), x.load()))
         val codeBody = emit(body, env = bodyenv)
         val setup = Code(
           codeV.setup,
@@ -556,8 +556,8 @@ private class Emit(
             lastKey,
             currKey),
           Env(
-            "i-1" -> (typeInfo[Long], eab.isMissing(i-1), eab.apply(i-1)),
-            "i" -> (typeInfo[Long], eab.isMissing(i), eab.apply(i))))
+            ("i-1", (typeInfo[Long], eab.isMissing(i-1), eab.apply(i-1))),
+            ("i", (typeInfo[Long], eab.isMissing(i), eab.apply(i)))))
 
         val processArrayElts = aout.arrayEmitterFromBuilder(eab)
         EmitTriplet(Code(eab.clear, processArrayElts.setup), processArrayElts.m.getOrElse(const(false)), Code(
@@ -617,8 +617,8 @@ private class Emit(
         val xmaccum = mb.newField[Boolean](name1 + "_missing")
         val xvaccum = coerce[Any](mb.newField(name1)(tti))
         val bodyenv = env.bind(
-          name1 -> (tti, xmaccum.load(), xvaccum.load()),
-          name2 -> (eti, xmv.load(), xvv.load()))
+          (name1, (tti, xmaccum.load(), xvaccum.load())),
+          (name2, (eti, xmv.load(), xvv.load())))
 
         val codeZ = emit(zero)
         val codeB = emit(body, env = bodyenv)
@@ -658,7 +658,7 @@ private class Emit(
         val xmv = mb.newField[Boolean]()
         val xvv = coerce[Any](mb.newField(valueName)(eti))
         val bodyenv = env.bind(
-          valueName -> (eti, xmv.load(), xvv.load()))
+          (valueName, (eti, xmv.load(), xvv.load())))
         val codeB = emit(body, env = bodyenv)
         val aBase = emitArrayIterator(a)
         val cont = { (m: Code[Boolean], v: Code[_]) =>
@@ -697,7 +697,7 @@ private class Emit(
         val xmv = mb.newField[Boolean]()
         val xvv = coerce[Any](mb.newField(name)(eti))
         val perEltEnv = env.bind(
-          name -> (eti, xmv.load(), xvv.load()))
+          (name, (eti, xmv.load(), xvv.load())))
         val codePerElt = emit(perElt, env = perEltEnv, rvas = Some(rvas))
 
         val aBase = emitArrayIterator(a)
@@ -716,7 +716,7 @@ private class Emit(
         val rvb = mb.newField[RegionValueBuilder]("rvb")
         val i = mb.newField[Int]("i")
 
-        val postEnv = env.bind("AGGR" -> (typeInfo[Long], const(false), aggr.load()))
+        val postEnv = env.bind("AGGR", (typeInfo[Long], const(false), aggr.load()))
         val codePost = emit(postAggIR, env = postEnv)
 
         EmitTriplet(
@@ -1083,7 +1083,7 @@ private class Emit(
               f._2
             case Seq() =>
               val methodbuilder = impl.getAsMethod(mb.fb, args.map(_.typ): _*)
-              methods.update(fn, methods(fn) :+ (args.map(_.typ), methodbuilder))
+              methods.update(fn, methods(fn) :+ (args.map(_.typ) -> methodbuilder))
               methodbuilder
           }
         val codeArgs = args.map(emit(_))
@@ -1144,7 +1144,7 @@ private class Emit(
       Env[(TypeInfo[_], Code[Boolean], Code[_])](ids.toFastSeq.flatMap { id: String =>
          env.lookupOption(id).map { e =>
            val (ti, m, v) = e
-           id -> (ti, f.addField[Boolean](m).load(), f.addField(v)(ti.asInstanceOf[TypeInfo[Any]]).load())
+           (id, (ti, f.addField[Boolean](m).load(), f.addField(v)(ti.asInstanceOf[TypeInfo[Any]]).load()))
         }
       }: _*)
     })
@@ -1234,7 +1234,7 @@ private class Emit(
         val elementTypeInfoA = coerce[Any](typeToTypeInfo(x.typ.elementType))
         val xmv = mb.newField[Boolean]()
         val xvv = mb.newField(name)(elementTypeInfoA)
-        val condenv = env.bind(name -> (elementTypeInfoA, xmv.load(), xvv.load()))
+        val condenv = env.bind(name, (elementTypeInfoA, xmv.load(), xvv.load()))
         val codeCond = emit(condition, condenv)
 
         val filterCont = { (cont: F, m: Code[Boolean], v: Code[_]) =>
@@ -1254,7 +1254,7 @@ private class Emit(
         val elementTypeInfoA = coerce[Any](typeToTypeInfo(coerce[TStreamable](a.typ).elementType))
         val xmv = mb.newField[Boolean]()
         val xvv = mb.newField(name)(elementTypeInfoA)
-        val bodyenv = env.bind(name -> (elementTypeInfoA, xmv.load(), xvv.load()))
+        val bodyenv = env.bind(name, (elementTypeInfoA, xmv.load(), xvv.load()))
         val bodyIt = emitArrayIterator(body, bodyenv)
 
         val bodyCont = { (cont: F, m: Code[Boolean], v: Code[_]) =>
@@ -1278,7 +1278,7 @@ private class Emit(
         val elementTypeInfoA = coerce[Any](typeToTypeInfo(elt))
         val xmv = mb.newField[Boolean]()
         val xvv = mb.newField(name)(elementTypeInfoA)
-        val bodyenv = env.bind(name -> (elementTypeInfoA, xmv.load(), xvv.load()))
+        val bodyenv = env.bind(name, (elementTypeInfoA, xmv.load(), xvv.load()))
         val codeB = emit(body, bodyenv)
         val mapCont = { (continuation: F, m: Code[Boolean], v: Code[_]) =>
           Code(
@@ -1301,8 +1301,8 @@ private class Emit(
         val zeroStored = mb.newField[Boolean]()
 
         val bodyenv = env
-          .bind(accumName -> (accumTypeInfo, xmaccum.load(), xvaccum.load()))
-          .bind(eltName -> (elementTypeInfoA, xmv.load(), xvv.load()))
+          .bind(accumName, (accumTypeInfo, xmaccum.load(), xvaccum.load()))
+          .bind(eltName, (elementTypeInfoA, xmv.load(), xvv.load()))
         val codeB = emit(body, bodyenv)
         val z = emit(zero)
         val aIt = emitArrayIterator(a)
@@ -1388,8 +1388,8 @@ private class Emit(
         val lv = mb.newField("join_left_v")(typeToTypeInfo(lelt))
 
         val fenv = env.bind(
-          l -> (typeToTypeInfo(lelt), lm.load(), lv.load()),
-          r -> (typeToTypeInfo(relt), rm.load() || rtyp.isElementMissing(region, rv, ri), rtyp.loadElement(region, rv, ri)))
+          (l, (typeToTypeInfo(lelt), lm.load(), lv.load())),
+          (r, (typeToTypeInfo(relt), rm.load() || rtyp.isElementMissing(region, rv, ri), rtyp.loadElement(region, rv, ri))))
 
         val compKeyF = mb.fb.newMethod(typeInfo[Region], typeInfo[Int])
         val et = new Emit(compKeyF, 1).emit(compKey, fenv)
